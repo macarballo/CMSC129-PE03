@@ -2,22 +2,26 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import csv
 
-# Function to load files and display content
+# Function to load files and display content in the table
 def load_file():
     global production_filename, parse_table_filename, is_production_loaded, is_parsetable_loaded
     
+    # Prompt user to select a file
     file_path = filedialog.askopenfilename(
         filetypes=[("Production or Parse Table Files", "*.prod *.ptbl")]
     )
     
+    # If no file is selected, exit the function
     if not file_path:
         return
     
     try:
+        # Open and read the selected file
         with open(file_path, newline='', encoding='utf-8') as file:
             reader = csv.reader(file)
             file_content = list(reader)
 
+            # Determine whether it's a production file or parse table
             if file_path.endswith(".prod"):
                 production_filename = file_path.split("/")[-1]
                 production_label.config(text=f"Productions: {production_filename}")
@@ -71,33 +75,40 @@ def display_content(table, content, columns):
 
 # Function to ask the user for the output filename and append the production filename
 def get_output_filename():
+    # Prompt user to specify the output file location
     outname = filedialog.asksaveasfilename(defaultextension=".prsd", filetypes=[("Parsed File", "*.prsd")])
+    
+    # If no filename is selected, return None
     if not outname:
         return None
+    
+    # Append the production filename to the output file name
     return f"{outname}_{production_filename.split('.')[0]}.prsd"
 
-# Function to parse the tokens and save the results (Skeleton)
+# Function to parse the tokens and save the results
 def parse_tokens():
+    # Get tokens from the input field and strip extra spaces
     input_tokens = tokens_entry.get().strip().split()
+    
+    # Show an error message if no tokens are provided
     if not input_tokens:
         messagebox.showerror("Error", "No input tokens provided!")
         return
 
-    # Skeleton parsing logic
+    # Initialize the parsing process (placeholder logic)
     stack = ["S"]  # Start with the start symbol
     input_buffer = input_tokens
     actions = []
     parsing_steps = []
     is_valid = True  # Placeholder for actual validity check
 
-    # Implement parsing logic here
-    # Here is just a placeholder loop
+    # Placeholder loop for parsing logic
     while stack and input_buffer:
         current_stack = " ".join(stack)
         current_input = " ".join(input_buffer)
-        action = "shift"  # Example action (shift as default action)
+        action = "shift"  # Default action (shift)
 
-        # Just an example action logic for demonstration
+        # Simulate matching or error handling
         if stack[-1] == input_buffer[0]:
             stack.pop()  # Simulate pop for matching token
             input_buffer.pop(0)  # Simulate moving the input buffer
@@ -109,7 +120,7 @@ def parse_tokens():
         actions.append(action)
         parsing_steps.append((current_stack, current_input, action))
 
-    # Display steps in the result table
+    # Display the parsing steps in the result table
     for row in parsing_result_table.get_children():
         parsing_result_table.delete(row)
     
@@ -120,6 +131,7 @@ def parse_tokens():
     output_filename = get_output_filename()
     if output_filename:
         try:
+            # Write parsing steps to the output file
             with open(output_filename, "w", newline='', encoding='utf-8') as file:
                 writer = csv.writer(file)
                 writer.writerow(["Stack", "Input Buffer", "Action"])
@@ -136,7 +148,7 @@ def parse_tokens():
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save parsing steps: {e}")
 
-# Initialize main window
+# Initialize the main Tkinter window
 root = tk.Tk()
 root.title("Non-Recursive Predictive Parser")
 root.state("zoomed")  # Start maximized
@@ -153,7 +165,7 @@ validation_result = tk.StringVar()
 is_production_loaded = False
 is_parsetable_loaded = False
 
-# Frame for Productions
+# Frame for displaying Productions
 production_frame = tk.LabelFrame(root, text="Productions", font=("Courier New", 12, "bold"))
 production_frame.grid(row=0, column=0, padx=10, pady=5, sticky="nsew")
 
@@ -165,7 +177,7 @@ production_table.pack(expand=False, fill="both", padx=5, pady=5)
 production_table["columns"] = ("ID", "NT", "P")
 production_table.configure(style="Custom.Treeview")
 
-# Frame for Parse Table
+# Frame for displaying Parse Table
 parsetable_frame = tk.LabelFrame(root, text="Parse Table", font=("Courier New", 12, "bold"))
 parsetable_frame.grid(row=0, column=1, padx=10, pady=5, sticky="nsew")
 
@@ -177,7 +189,7 @@ parse_table.pack(expand=False, fill="both", padx=5, pady=5)
 parse_table["columns"] = ["Non-Terminals"]  # Initial column for non-terminals
 parse_table.configure(style="Custom.Treeview")
 
-# Load button below the production and parse table frames
+# Load button for loading files
 load_button = tk.Button(root, text="Load", command=load_file, font=("Courier New", 12, "bold"), bg="#20283E", fg="white")
 load_button.grid(row=1, column=0, columnspan=2, pady=15, padx=15, sticky="nsew")
 
@@ -185,45 +197,40 @@ load_button.grid(row=1, column=0, columnspan=2, pady=15, padx=15, sticky="nsew")
 loaded_message_frame = tk.Frame(root)
 loaded_message_frame.grid(row=2, column=0, columnspan=2, pady=15, padx=15, sticky="w")
 
-# "LOADED" label (bold)
 loaded_label = tk.Label(loaded_message_frame, text="LOADED:", font=("Courier New", 12, "bold"))
 loaded_label.pack(side=tk.LEFT)
 
-# Rest of the message (normal)
 loaded_file_label = tk.Label(loaded_message_frame, text=" No file loaded", font=("Courier New", 12))
 loaded_file_label.pack(side=tk.LEFT)
 
-# Input Frame for Token String (shifted down to row 3)
+# Input Frame for Token String
 input_frame = tk.Frame(root)
 input_frame.grid(row=3, column=0, columnspan=2, padx=10, pady=10, sticky="nsew")
 
-# Label and entry field for tokens
 tk.Label(input_frame, text="INPUT:", font=("Courier New", 12, "bold")).grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
-tokens_entry = tk.Entry(input_frame, font=("Courier New", 12))
+tokens_entry = tk.Entry(input_frame, font=("Courier New", 12), width=30)
 tokens_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
-# Ensure that the column for the entry field expands
-input_frame.grid_columnconfigure(1, weight=1)
+# Parse button
+parse_button = tk.Button(root, text="Parse", command=parse_tokens, font=("Courier New", 12, "bold"), bg="#2A72D2", fg="white", state=tk.DISABLED)
+parse_button.grid(row=4, column=0, columnspan=2, padx=10, pady=15, sticky="nsew")
 
-# Parse button (disabled initially) moved to row 4
-parse_button = tk.Button(root, text="Parse", font=("Courier New", 12, "bold"), bg="#6AB187", fg="white", state=tk.DISABLED, command=parse_tokens)
-parse_button.grid(row=4, column=0, columnspan=2, pady=10, padx=10, sticky="nsew")
-
-# Table to display the parsing results
-parsing_result_frame = tk.LabelFrame(root, text="Parsing Result", font=("Courier New", 12, "bold"))
-parsing_result_frame.grid(row=5, column=0, columnspan=2, padx=10, pady=10, sticky="nsew")
+# Frame for displaying parsing results
+parsing_result_frame = tk.LabelFrame(root, text="Parsing Results", font=("Courier New", 12, "bold"))
+parsing_result_frame.grid(row=5, column=0, columnspan=2, padx=10, pady=15, sticky="nsew")
 
 parsing_message_label = tk.Label(parsing_result_frame, text="PARSING: Not yet parsed", font=("Courier New", 12))
-parsing_message_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+parsing_message_label.pack(anchor="w", padx=5, pady=5)
 
 parsing_result_table = ttk.Treeview(parsing_result_frame, show="headings", height=10)
-parsing_result_table.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
+parsing_result_table.pack(expand=True, fill="both", padx=5, pady=5)
 
 parsing_result_table["columns"] = ["Stack", "Input Buffer", "Action"]
+parsing_result_table.column("Stack", anchor="center")
+parsing_result_table.column("Input Buffer", anchor="center")
+parsing_result_table.column("Action", anchor="center")
+parsing_result_table.configure(style="Custom.Treeview")
 
-parsing_result_frame.grid_rowconfigure(1, weight=1)
-parsing_result_frame.grid_columnconfigure(0, weight=1)
-
-# Run the Tkinter event loop
+# Start the Tkinter main loop
 root.mainloop()
