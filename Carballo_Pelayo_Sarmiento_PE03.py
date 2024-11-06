@@ -30,6 +30,10 @@ def load_file():
                 display_content(parse_table, file_content, file_content[0])
                 is_parsetable_loaded = True
 
+            # Clear parsing result when a new file is loaded
+            parsing_result_table.delete(*parsing_result_table.get_children())
+            parsing_message_label.config(text="PARSING: Not yet parsed")
+
             # Enable the parse button if both files are loaded
             if is_production_loaded and is_parsetable_loaded:
                 parse_button.config(state=tk.NORMAL)
@@ -39,6 +43,98 @@ def load_file():
 
     except Exception as e:
         messagebox.showerror("Error", f"Failed to load file: {e}")
+
+# Function to display content in a Treeview table with fixed column width
+def display_content(table, content, columns):
+    # Clear the existing columns before setting new ones
+    table["columns"] = ()  # This clears the columns first
+
+    table.config(columns=columns)
+    
+    # Clear any existing content in the table
+    for row in table.get_children():
+        table.delete(row)
+
+    # Set fixed column width for each column
+    fixed_width = 80  # Set a fixed width for each column (adjust as needed)
+    for col in columns:
+        table.heading(col, text=col)
+        table.column(col, anchor="center", width=fixed_width, stretch=tk.NO)
+
+    # Insert new content
+    for row in content:  # Include all rows, including the first one
+        # Check if the row has the expected number of columns
+        if len(row) == len(columns):  # Ensure the number of columns in the row matches the table's columns
+            table.insert("", "end", values=row)
+        else:
+            print(f"Skipping invalid row: {row}")
+
+# Function to ask the user for the output filename and append the production filename
+def get_output_filename():
+    outname = filedialog.asksaveasfilename(defaultextension=".prsd", filetypes=[("Parsed File", "*.prsd")])
+    if not outname:
+        return None
+    return f"{outname}_{production_filename.split('.')[0]}.prsd"
+
+# Function to parse the tokens and save the results (Skeleton)
+def parse_tokens():
+    input_tokens = tokens_entry.get().strip().split()
+    if not input_tokens:
+        messagebox.showerror("Error", "No input tokens provided!")
+        return
+
+    # Skeleton parsing logic
+    stack = ["S"]  # Start with the start symbol
+    input_buffer = input_tokens
+    actions = []
+    parsing_steps = []
+    is_valid = True  # Placeholder for actual validity check
+
+    # Implement parsing logic here
+    # Here is just a placeholder loop
+    while stack and input_buffer:
+        current_stack = " ".join(stack)
+        current_input = " ".join(input_buffer)
+        action = "shift"  # Example action (shift as default action)
+
+        # Just an example action logic for demonstration
+        if stack[-1] == input_buffer[0]:
+            stack.pop()  # Simulate pop for matching token
+            input_buffer.pop(0)  # Simulate moving the input buffer
+            action = "match"
+        else:
+            action = "error"  # Simulate an error if no match
+            is_valid = False  # Mark as invalid if an error occurs
+
+        actions.append(action)
+        parsing_steps.append((current_stack, current_input, action))
+
+    # Display steps in the result table
+    for row in parsing_result_table.get_children():
+        parsing_result_table.delete(row)
+    
+    for step in parsing_steps:
+        parsing_result_table.insert("", "end", values=step)
+
+    # Save the parsing steps to an output file
+    output_filename = get_output_filename()
+    if output_filename:
+        try:
+            with open(output_filename, "w", newline='', encoding='utf-8') as file:
+                writer = csv.writer(file)
+                writer.writerow(["Stack", "Input Buffer", "Action"])
+                for step in parsing_steps:
+                    writer.writerow(step)
+
+            # After saving, update the parsing message label with the result and output filename
+            if is_valid:
+                parsing_message_label.config(text=f"PARSING: Valid. Please see {output_filename}")
+            else:
+                parsing_message_label.config(text=f"PARSING: Invalid. Please see {output_filename}")
+
+            messagebox.showinfo("Success", f"Parsing steps saved to {output_filename}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save parsing steps: {e}")
 
 # Initialize main window
 root = tk.Tk()
@@ -56,24 +152,6 @@ parse_table_filename = "No file loaded"
 validation_result = tk.StringVar()
 is_production_loaded = False
 is_parsetable_loaded = False
-
-# Function to display content in a Treeview table with fixed column width
-def display_content(table, content, columns):
-    table.config(columns=columns)
-    
-    # Clear any existing content in the table
-    for row in table.get_children():
-        table.delete(row)
-
-    # Set fixed column width for each column
-    fixed_width = 80  # Set a fixed width for each column (adjust as needed)
-    for col in columns:
-        table.heading(col, text=col)
-        table.column(col, anchor="center", width=fixed_width, stretch=tk.NO)
-
-    # Insert new content
-    for row in content[1:]:  # Skipping header row if present
-        table.insert("", "end", values=row)
 
 # Frame for Productions
 production_frame = tk.LabelFrame(root, text="Productions", font=("Courier New", 12, "bold"))
@@ -100,7 +178,7 @@ parse_table["columns"] = ["Non-Terminals"]  # Initial column for non-terminals
 parse_table.configure(style="Custom.Treeview")
 
 # Load button below the production and parse table frames
-load_button = tk.Button(root, text="Load", command=load_file, font=("Courier New", 12, "bold"), bg="#4CAF50", fg="white")
+load_button = tk.Button(root, text="Load", command=load_file, font=("Courier New", 12, "bold"), bg="#20283E", fg="white")
 load_button.grid(row=1, column=0, columnspan=2, pady=15, padx=15, sticky="nsew")
 
 # Frame for displaying loaded message
@@ -129,47 +207,23 @@ tokens_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 input_frame.grid_columnconfigure(1, weight=1)
 
 # Parse button (disabled initially) moved to row 4
-parse_button = tk.Button(root, text="Parse", font=("Courier New", 12, "bold"), bg="#008CBA", fg="white", state=tk.DISABLED, command=lambda: parse_tokens())
-parse_button.grid(row=4, column=0, columnspan=2, pady=15, padx=15, sticky="nsew")
+parse_button = tk.Button(root, text="Parse", font=("Courier New", 12, "bold"), bg="#6AB187", fg="white", state=tk.DISABLED, command=parse_tokens)
+parse_button.grid(row=4, column=0, columnspan=2, pady=10, padx=10, sticky="nsew")
 
-# Frame to hold the parsing message and result table moved to row 5
-parsing_result_frame = tk.Frame(root)
+# Table to display the parsing results
+parsing_result_frame = tk.LabelFrame(root, text="Parsing Result", font=("Courier New", 12, "bold"))
 parsing_result_frame.grid(row=5, column=0, columnspan=2, padx=10, pady=10, sticky="nsew")
 
-# Message area for the parsing result
 parsing_message_label = tk.Label(parsing_result_frame, text="PARSING: Not yet parsed", font=("Courier New", 12))
-parsing_message_label.grid(row=0, column=0, columnspan=2, pady=10, padx=10, sticky="w")
+parsing_message_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
-# Parsing result table (initially empty)
 parsing_result_table = ttk.Treeview(parsing_result_frame, show="headings", height=10)
-parsing_result_table.grid(row=1, column=0, columnspan=2, padx=10, pady=10, sticky="nsew")
-parsing_result_table["columns"] = ["Step", "Action", "Stack", "Input"]  # Example columns for parsing results
-parsing_result_table.configure(style="Custom.Treeview")
+parsing_result_table.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
 
-# Function to parse tokens based on the loaded parse table and productions
-def parse_tokens():
-    tokens = tokens_entry.get().strip().split()  # Example of getting tokens from input
-    
-    # Parse message
-    parsing_message_label.config(text="PARSING: Valid. Please see test_rules.prsd.")
-    
-    # Placeholder for parsing result (you'll replace this with actual parsing logic)
-    parsing_result = [
-        ("Step 1", "Action 1", "Stack 1", "Input 1"),
-        ("Step 2", "Action 2", "Stack 2", "Input 2")
-    ]
-    
-    # Clear the existing table and insert parsing results
-    for row in parsing_result_table.get_children():
-        parsing_result_table.delete(row)
-    
-    for row in parsing_result:
-        parsing_result_table.insert("", "end", values=row)
-    
-    # Example: Saving result to a file
-    with open("test_rules.prsd", "w") as file:
-        file.write("Parsed successfully.\n")
-        # Add actual parsing result saving logic here
+parsing_result_table["columns"] = ["Stack", "Input Buffer", "Action"]
 
-# Run the application
+parsing_result_frame.grid_rowconfigure(1, weight=1)
+parsing_result_frame.grid_columnconfigure(0, weight=1)
+
+# Run the Tkinter event loop
 root.mainloop()
