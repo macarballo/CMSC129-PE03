@@ -1,0 +1,18 @@
+Stack,Input Buffer,Action
+$ E,id + id * id $,Output E -> T E’
+$ E’ T,id + id * id $,Output T -> F T’
+$ E’ T’ F,id + id * id $,Output F -> id
+$ E’ T’ id,id + id * id $,Match id
+$ E’ T’,+ id * id $,Output T’ -> e
+$ E’,+ id * id $,Output E’ -> + T E’
+$ E’ T +,+ id * id $,Match +
+$ E’ T,id * id $,Output T -> F T’
+$ E’ T’ F,id * id $,Output F -> id
+$ E’ T’ id,id * id $,Match id
+$ E’ T’,* id $,Output T’ -> * F T’
+$ E’ T’ F *,* id $,Match *
+$ E’ T’ F,id $,Output F -> id
+$ E’ T’ id,id $,Match id
+$ E’ T’,$,Output T’ -> e
+$ E’,$,Output E’ -> e
+$,$,Match $

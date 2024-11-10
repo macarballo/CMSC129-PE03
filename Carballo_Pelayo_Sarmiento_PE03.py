@@ -25,9 +25,9 @@ def parse_tokens_with_grammar(productions: dict, parse_table: dict):
         messagebox.showerror("Error", "No input tokens provided!")
         return
 
-    print(f"Parsing tokens: {input_tokens}")
+    starting_production_rule = productions[0][1]  # 2nd column of 1st row
 
-    stack = ["$", "E"]
+    stack = ["$", starting_production_rule]
     input_buffer = input_tokens + ["$"]
     parsing_steps = []
     is_valid = True
@@ -42,6 +42,7 @@ def parse_tokens_with_grammar(productions: dict, parse_table: dict):
             stack.pop()
             input_buffer.pop(0)
             action = f"Match {stack_top}"
+
         elif stack_top in parse_table:
             if current_input in parse_table[stack_top]:
                 production_number = parse_table[stack_top][current_input]
@@ -59,6 +60,7 @@ def parse_tokens_with_grammar(productions: dict, parse_table: dict):
                 action = "Error: No matching terminal in parse table"
                 is_valid = False
                 break
+
         else:
             action = f"Error: Unexpected token {stack_top}"
             is_valid = False
@@ -66,8 +68,37 @@ def parse_tokens_with_grammar(productions: dict, parse_table: dict):
 
         parsing_steps.append((current_stack, current_buffer, action))
 
-    print(f"Parsing steps: {parsing_steps}")
-    print(f"Parsing successful: {is_valid}")
+    # Display the parsing steps in the result table
+    for row in parsing_result_table.get_children():
+        parsing_result_table.delete(row)
+
+    for step in parsing_steps:
+        parsing_result_table.insert("", "end", values=step)
+
+    # Save the parsing steps to an output file
+    output_filename = get_output_filename()
+    if output_filename:
+        try:
+            # Write parsing steps to the output file
+            with open(output_filename, "w", newline="", encoding="utf-8") as file:
+                writer = csv.writer(file)
+                writer.writerow(["Stack", "Input Buffer", "Action"])
+                for step in parsing_steps:
+                    writer.writerow(step)
+
+            # After saving, update the parsing message label with the result and output filename
+            if is_valid:
+                parsing_message_label.config(
+                    text=f"PARSING: Valid. Please see {output_filename}"
+                )
+            else:
+                parsing_message_label.config(
+                    text=f"PARSING: Invalid. Please see {output_filename}"
+                )
+
+            messagebox.showinfo("Success", f"Parsing steps saved to {output_filename}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save parsing steps: {e}")
 
 
 def load_productions(file_path):
@@ -187,10 +218,9 @@ def get_output_filename():
     Returns:
         str or None: Path for saving parsed results, or None if cancelled.
     """
-    outname = filedialog.asksaveasfilename(
+    return filedialog.asksaveasfilename(
         defaultextension=".prsd", filetypes=[("Parsed File", "*.prsd")]
     )
-    return f"{outname}_{production_filename.split('.')[0]}.prsd" if outname else None
 
 
 # Initialize the main Tkinter window
