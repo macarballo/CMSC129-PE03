@@ -11,6 +11,7 @@ is_parsetable_loaded = False
 productions_values = None
 parse_table_values = None
 
+
 def parse_tokens_with_grammar(productions: dict, parse_table: dict):
     """
     Parses tokens from the input field using a specified grammar.
@@ -30,11 +31,12 @@ def parse_tokens_with_grammar(productions: dict, parse_table: dict):
     input_buffer = input_tokens + ["$"]
     parsing_steps = []
     is_valid = True
+    last_action = ""
 
     while stack:
         stack_top = stack[-1]
         current_input = input_buffer[0]
-        current_stack = " ".join(stack)
+        current_stack = " ".join(reversed(stack))
         current_buffer = " ".join(input_buffer)
 
         if stack_top == current_input:
@@ -65,7 +67,11 @@ def parse_tokens_with_grammar(productions: dict, parse_table: dict):
             is_valid = False
             break
 
-        parsing_steps.append((current_stack, current_buffer, action))
+        parsing_steps.append((current_stack, current_buffer, last_action))
+        last_action = action
+
+    else:
+        parsing_steps.append(("", "", last_action))
 
     # Display the parsing steps in the result table
     for row in parsing_result_table.get_children():
@@ -87,7 +93,6 @@ def parse_tokens_with_grammar(productions: dict, parse_table: dict):
             # Write parsing steps to the output file
             with open(output_filename, "w", newline="", encoding="utf-8") as file:
                 writer = csv.writer(file)
-                writer.writerow(["Stack", "Input Buffer", "Action"])
                 for step in parsing_steps:
                     writer.writerow(step)
 
@@ -98,6 +103,7 @@ def parse_tokens_with_grammar(productions: dict, parse_table: dict):
             messagebox.showinfo("Success", f"Parsing steps saved to {output_filename}")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save parsing steps: {e}")
+
 
 def load_productions(file_path):
     """
@@ -168,6 +174,7 @@ def load_file():
                 display_content(production_table, file_content, ["ID", "NT", "P"])
                 productions_values = load_productions(file_path)
                 is_production_loaded = True
+
             elif file_path.endswith(".ptbl"):
                 parse_table_filename = file_path.split("/")[-1]
                 parsetable_label.config(text=f"Parse Table: {parse_table_filename}")
@@ -182,6 +189,7 @@ def load_file():
                 parse_button.config(state=tk.NORMAL)
 
             loaded_file_label.config(text=f" {file_path.split('/')[-1]}")
+
     except Exception as e:
         messagebox.showerror("Error", f"Failed to load file: {e}")
 
@@ -220,6 +228,7 @@ def get_output_filename():
         defaultextension=".prsd", filetypes=[("Parsed File", "*.prsd")]
     )
 
+
 # Initialize the main Tkinter window
 root = tk.Tk()
 root.title("Non-Recursive Predictive Parser")
@@ -246,7 +255,9 @@ production_label = tk.Label(
 )
 production_label.pack(anchor="w", padx=5, pady=5)
 
-production_table = ttk.Treeview(production_frame, show="headings", height=10,  style="Bold.Treeview")
+production_table = ttk.Treeview(
+    production_frame, show="headings", height=10, style="Bold.Treeview"
+)
 production_table.pack(expand=False, fill="both", padx=5, pady=5)
 production_table["columns"] = ("ID", "NT", "P")
 
@@ -262,7 +273,9 @@ parsetable_label = tk.Label(
 )
 parsetable_label.pack(anchor="w", padx=5, pady=5)
 
-parse_table = ttk.Treeview(parsetable_frame, show="headings", height=10, style="Bold.Treeview")
+parse_table = ttk.Treeview(
+    parsetable_frame, show="headings", height=10, style="Bold.Treeview"
+)
 parse_table.pack(expand=False, fill="both", padx=5, pady=5)
 parse_table["columns"] = ["Non-Terminals"]
 
@@ -322,7 +335,9 @@ parsing_message_label = tk.Label(
 )
 parsing_message_label.pack(anchor="w", padx=5, pady=5)
 
-parsing_result_table = ttk.Treeview(parsing_result_frame, show="headings", height=10, style="Bold.Treeview")
+parsing_result_table = ttk.Treeview(
+    parsing_result_frame, show="headings", height=10, style="Bold.Treeview"
+)
 parsing_result_table.pack(expand=True, fill="both", padx=5, pady=5)
 parsing_result_table["columns"] = ["Stack", "Input Buffer", "Action"]
 for col in ["Stack", "Input Buffer", "Action"]:
