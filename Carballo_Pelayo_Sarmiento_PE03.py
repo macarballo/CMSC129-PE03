@@ -11,7 +11,6 @@ is_parsetable_loaded = False
 productions_values = None
 parse_table_values = None
 
-
 def parse_tokens_with_grammar(productions: dict, parse_table: dict):
     """
     Parses tokens from the input field using a specified grammar.
@@ -32,6 +31,7 @@ def parse_tokens_with_grammar(productions: dict, parse_table: dict):
     parsing_steps = []
     is_valid = True
     last_action = ""
+    error_message = ""
 
     while stack:
         stack_top = stack[-1]
@@ -50,6 +50,7 @@ def parse_tokens_with_grammar(productions: dict, parse_table: dict):
                 if production_number == "":
                     action = "Error: No rule found"
                     is_valid = False
+                    error_message = f"No rule found for {stack_top} with input {current_input}."
                     break
                 else:
                     stack.pop()
@@ -60,11 +61,13 @@ def parse_tokens_with_grammar(productions: dict, parse_table: dict):
             else:
                 action = "Error: No matching terminal in parse table"
                 is_valid = False
+                error_message = f"No matching terminal for {stack_top} with input {current_input}."
                 break
 
         else:
             action = f"Error: Unexpected token {stack_top}"
             is_valid = False
+            error_message = f"Unexpected token '{stack_top}' encountered."
             break
 
         parsing_steps.append((current_stack, current_buffer, last_action))
@@ -80,11 +83,11 @@ def parse_tokens_with_grammar(productions: dict, parse_table: dict):
     for step in parsing_steps:
         parsing_result_table.insert("", "end", values=step)
 
-    # Update the parsing message label immediately after parsing
+   # Update the parsing message label immediately after parsing
     if is_valid:
         parsing_message_label.config(text="PARSING: Valid")
     else:
-        parsing_message_label.config(text="PARSING: Invalid")
+        parsing_message_label.config(text=f"PARSING: Invalid - {error_message}")
 
     # Ask the user for the output filename after updating the parsing message
     output_filename = get_output_filename()
@@ -96,14 +99,23 @@ def parse_tokens_with_grammar(productions: dict, parse_table: dict):
                 for step in parsing_steps:
                     writer.writerow(step)
 
+                # Append the error message (if invalid) at the end of the file
+                if not is_valid:
+                    writer.writerow([f"Error: {error_message}"])  # Add error message in a new row
+
             # Update the parsing message label with the output filename
-            parsing_message_label.config(
-                text=f"PARSING: {'Valid' if is_valid else 'Invalid'}. Please see {output_filename}"
-            )
+            if is_valid:
+                parsing_message_label.config(
+                    text=f"PARSING: Valid. Please see {output_filename}"
+                )
+            else:
+                parsing_message_label.config(
+                    text=f"PARSING: Invalid - {error_message} Please see {output_filename}"
+                )
+
             messagebox.showinfo("Success", f"Parsing steps saved to {output_filename}")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save parsing steps: {e}")
-
 
 def load_productions(file_path):
     """
