@@ -11,7 +11,6 @@ is_parsetable_loaded = False
 productions_values = None
 parse_table_values = None
 
-
 def parse_tokens_with_grammar(productions: dict, parse_table: dict):
     """
     Parses tokens from the input field using a specified grammar.
@@ -75,7 +74,13 @@ def parse_tokens_with_grammar(productions: dict, parse_table: dict):
     for step in parsing_steps:
         parsing_result_table.insert("", "end", values=step)
 
-    # Save the parsing steps to an output file
+    # Update the parsing message label immediately after parsing
+    if is_valid:
+        parsing_message_label.config(text="PARSING: Valid")
+    else:
+        parsing_message_label.config(text="PARSING: Invalid")
+
+    # Ask the user for the output filename after updating the parsing message
     output_filename = get_output_filename()
     if output_filename:
         try:
@@ -86,20 +91,13 @@ def parse_tokens_with_grammar(productions: dict, parse_table: dict):
                 for step in parsing_steps:
                     writer.writerow(step)
 
-            # After saving, update the parsing message label with the result and output filename
-            if is_valid:
-                parsing_message_label.config(
-                    text=f"PARSING: Valid. Please see {output_filename}"
-                )
-            else:
-                parsing_message_label.config(
-                    text=f"PARSING: Invalid. Please see {output_filename}"
-                )
-
+            # Update the parsing message label with the output filename
+            parsing_message_label.config(
+                text=f"PARSING: {'Valid' if is_valid else 'Invalid'}. Please see {output_filename}"
+            )
             messagebox.showinfo("Success", f"Parsing steps saved to {output_filename}")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save parsing steps: {e}")
-
 
 def load_productions(file_path):
     """
@@ -222,7 +220,6 @@ def get_output_filename():
         defaultextension=".prsd", filetypes=[("Parsed File", "*.prsd")]
     )
 
-
 # Initialize the main Tkinter window
 root = tk.Tk()
 root.title("Non-Recursive Predictive Parser")
@@ -231,6 +228,10 @@ root.state("zoomed")
 root.grid_columnconfigure(0, weight=1)
 root.grid_columnconfigure(1, weight=1)
 root.grid_rowconfigure(0, weight=1)
+
+# Create a style for bold headings
+style = ttk.Style()
+style.configure("Bold.Treeview.Heading", font=("Courier New", 12, "bold"))
 
 # UI Elements
 production_frame = tk.LabelFrame(
@@ -245,7 +246,7 @@ production_label = tk.Label(
 )
 production_label.pack(anchor="w", padx=5, pady=5)
 
-production_table = ttk.Treeview(production_frame, show="headings", height=10)
+production_table = ttk.Treeview(production_frame, show="headings", height=10,  style="Bold.Treeview")
 production_table.pack(expand=False, fill="both", padx=5, pady=5)
 production_table["columns"] = ("ID", "NT", "P")
 
@@ -261,7 +262,7 @@ parsetable_label = tk.Label(
 )
 parsetable_label.pack(anchor="w", padx=5, pady=5)
 
-parse_table = ttk.Treeview(parsetable_frame, show="headings", height=10)
+parse_table = ttk.Treeview(parsetable_frame, show="headings", height=10, style="Bold.Treeview")
 parse_table.pack(expand=False, fill="both", padx=5, pady=5)
 parse_table["columns"] = ["Non-Terminals"]
 
@@ -321,8 +322,11 @@ parsing_message_label = tk.Label(
 )
 parsing_message_label.pack(anchor="w", padx=5, pady=5)
 
-parsing_result_table = ttk.Treeview(parsing_result_frame, show="headings", height=10)
+parsing_result_table = ttk.Treeview(parsing_result_frame, show="headings", height=10, style="Bold.Treeview")
 parsing_result_table.pack(expand=True, fill="both", padx=5, pady=5)
 parsing_result_table["columns"] = ["Stack", "Input Buffer", "Action"]
+for col in ["Stack", "Input Buffer", "Action"]:
+    parsing_result_table.heading(col, text=col)
+    parsing_result_table.column(col, anchor="center", width=120)
 
 root.mainloop()
